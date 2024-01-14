@@ -1,0 +1,11 @@
+package main
+
+const (
+    MEMORY_SIZE = 4096
+    FONTSET_ADDR = 0x50
+    START_ADDRESS = 0x200
+
+    DISPLAY_WIDTH = 64
+    DISPLAY_HEIGHT = 32
+    VIDEO_SCALE = 10
+)
