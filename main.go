@@ -85,29 +85,29 @@ func (w *SDL_WINDOW) HandleEvents(vm *Emulator) {
 			    fmt.Println("2")
 			    break
 		        case sdl.K_3:
-			   fmt.Println("3")
-			   break
+			    fmt.Println("3")
+			    break
 		        case sdl.K_q:
-			   fmt.Println("4")
-		    	   break   
+			    fmt.Println("4")
+			    break   
 		        case sdl.K_w:
-			   fmt.Println("5")
-		    	   break
+			    fmt.Println("5")
+			    break
 			case sdl.K_e:
 			    fmt.Println("6")
 			    break
 			case sdl.K_a:
-			   fmt.Println("7")
+			    fmt.Println("7")
 			    break
 			case sdl.K_s:
-			   fmt.Println("8")
-		    	   break
+			    fmt.Println("8")
+			    break
 			case sdl.K_d:
 			    fmt.Println("9")
 			    break
 			case sdl.K_z:
-			   fmt.Println("A")
-		    	   break
+			    fmt.Println("A")
+			    break
 			case sdl.K_x:
 			    fmt.Println("0")
 			    break
@@ -160,7 +160,7 @@ func main() {
 	for vm.running {
 	    w.HandleEvents(vm);
 	}
-	close(draw)
+	close(draw)	// Closing channel when VM is stopped so there's nothing more to draw
     }()
     
     // Drawing only when having a draw signal
