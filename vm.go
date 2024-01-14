@@ -5,7 +5,7 @@ import (
 )
 
 type Emulator struct {
-    memory[MEMORY_SIZE] uint16
+    memory[MEMORY_SIZE] uint8
     registers[16] uint8
     pc uint16
     display[DISPLAY_WIDTH * DISPLAY_HEIGHT] bool
@@ -37,7 +37,7 @@ func NewEmulator() *Emulator {
     
     // Copy fontset into memory address 0x50
     for i := 0; i < 80; i++ {
-	e.memory[FONTSET_ADDR + i] = uint16(fontset[i])
+	e.memory[FONTSET_ADDR + i] = fontset[i]
     }
 
     e.pc = START_ADDRESS
@@ -59,8 +59,8 @@ func (e *Emulator) load_rom(rom string) {
 // Prints memory in a pretty table of addresses last address digit will be on collumns and rest as lines
 func (e *Emulator) print_memory() {
     fmt.Println("Memory Dump:")
-    fmt.Printf("Addr |  00  |  01  |  02  |  03  |  04  |  05  |  06  |  07  |  08  |  09  |  0A  |  0B  |  0C  |  0D  |  0E  |  0F  |\n")
-    fmt.Printf("======================================================================================================================\n")
+    fmt.Printf("Addr | 00 | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 0A | 0B | 0C | 0D | 0E | 0F |\n")
+    fmt.Printf("======================================================================================\n")
 
     for i := 0; i < MEMORY_SIZE; i += 16 {
         empty := true 	// Check if the entire row is 0000 and skip it if true
@@ -78,10 +78,23 @@ func (e *Emulator) print_memory() {
         fmt.Printf("%04X | ", i)
         // Print each memory cell
         for j := 0; j < 16; j++ {
-            fmt.Printf("%04X | ", e.memory[i+j])
+            fmt.Printf("%02X | ", e.memory[i+j])
         }
     	fmt.Println()
     }
+}
+
+func (e *Emulator) fetch() {
+     
+
+}
+
+func (e *Emulator) decode() {
+
+}
+
+func (e *Emulator) execute() {
+
 }
 
 // Run the vm 

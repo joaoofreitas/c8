@@ -8,7 +8,7 @@ import (
 
 
 // ReadRom reads a rom file and returns a slice of uint16 representing the instruction
-func ReadRom(rom string) ([]uint16, error) {
+func ReadRom(rom string) ([]uint8, error) {
     var err error = nil;
 
     f, err := os.Open(rom)
@@ -34,10 +34,5 @@ func ReadRom(rom string) ([]uint16, error) {
 	return nil, err
     }
 
-    data := make([]uint16, len(bytes) / 2)
-    for i := 0; i < len(bytes); i += 2 {
-	data[i / 2] = uint16(bytes[i]) << 8 | uint16(bytes[i + 1])
-    }
-
-    return data, err
+    return bytes, err
 }

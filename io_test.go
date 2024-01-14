@@ -19,7 +19,7 @@ func TestReadRom(t *testing.T) {
     if err != nil {
         t.Errorf("Expected nil, got %s", err)
     }
-    if len(data) != 478/2 {
+    if len(data) != 478 {
         t.Errorf("Expected 478 bytes, got %d", len(data))
     }
 }
