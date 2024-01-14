@@ -46,8 +46,9 @@ func TestMemoryPrint(t *testing.T) {
 func TestLoadROM(t *testing.T) {
     e := NewEmulator()
     e.load_rom("roms/test.ch8")
-
-    if e.memory[START_ADDRESS] != 0 {
-	t.Error("Expected ROM to be loaded into memory")
+    
+    first_instruction := e.memory[START_ADDRESS]
+    if first_instruction == 0x0 {
+	t.Errorf("Expected first instruction is 0x%x, got 0x%x", 0x124e, first_instruction)
     }
 }
