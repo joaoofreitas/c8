@@ -17,6 +17,7 @@ type Emulator struct {
 
 
     frequency uint64
+    running bool
 }
 
 // Constructor for Emulator, fontset loading, initialization of PC, etc...
@@ -50,6 +51,7 @@ func NewEmulator() *Emulator {
 
     e.pc = START_ADDRESS
     e.frequency = 1000000 // 1MHz
+    e.running = true
     return e
 }
 
