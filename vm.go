@@ -109,6 +109,20 @@ func (e *Emulator) print_display() {
     }
 }
 
+func (e *Emulator) print_registers() {
+	fmt.Println("Registers")
+	for i := 0; i < 16; i++ {
+	fmt.Printf("V%X: %02X\n", i, e.registers[i])
+	}
+}
+
+func (e *Emulator) print_peripherals() {
+	fmt.Println("Peripherals")
+	for i := 0; i < 16; i++ {
+	    fmt.Printf("P%X: %02X\n", i, e.peripherals[i])
+	}
+}
+
 func (e *Emulator) push(addr uint16) {
     e.stack[e.sp] = addr
     e.sp++
@@ -198,9 +212,4 @@ func (e *Emulator) execute() {
 	    draw <- true
     	    break
     }
-}
-
-// Run the vm 
-func (e *Emulator) run() {
-    fmt.Println("Running...")
 }
