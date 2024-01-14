@@ -52,3 +52,12 @@ func TestLoadROM(t *testing.T) {
 	t.Errorf("Expected first instruction is 0x%x, got 0x%x", 0x124e, first_instruction)
     }
 }
+
+func TestExecute(t *testing.T) {
+	e := NewEmulator()
+	e.load_rom("roms/ibm.ch8")
+	e.execute()
+	if e.pc != START_ADDRESS + 2 {
+	    t.Errorf("Expected pc to be 0x%x, got 0x%x", START_ADDRESS + 2, e.pc)
+	}
+}

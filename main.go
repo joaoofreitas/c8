@@ -5,12 +5,21 @@ package main
 
 import (
     "time"
+    "os"
+    "math/rand"
 )
 
 var draw chan bool
 
+func random_uint8() uint8 {
+	return uint8(rand.Intn(255))
+}
 
 func main() {
+    // Get arguments from command line
+    args := os.Args[1:]
+    rom_location := args[0]
+
     w := SDL_WINDOW{}
     w.InitSDLWindow()
     defer w.window.Destroy()
@@ -18,7 +27,7 @@ func main() {
     w.InitColors()
    
     vm := NewEmulator()
-    vm.load_rom("roms/ibm.ch8")
+    vm.load_rom(rom_location)
     draw = make(chan bool) 
 
     // Run the machine at 1MHz 

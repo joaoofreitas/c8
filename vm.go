@@ -11,6 +11,9 @@ type Emulator struct {
     i uint16
     sp uint8
 
+    delay_timer uint8
+    sound_timer uint8
+
     display[DISPLAY_WIDTH * DISPLAY_HEIGHT] uint8
     peripherals[16] uint8
     stack[16] uint16
@@ -164,27 +167,126 @@ func (e *Emulator) execute() {
 			e.display[i] = 0 
 		    }
 		    break
+		case 0x00EE:
+		    // Return from subroutine
+		    e.pop()
+		    e.pc = e.stack[e.sp]
+		    break
 	    }
 	    break
 	case 0x1000:
 	    // Jump to address NNN
 	    e.pc = instruction & 0x0FFF
 	    break
+	case 0x2000:
+	    // Call subroutine at NNN
+	    e.push(e.pc)
+	    e.pc = instruction & 0x0FFF
+	    break
+	case 0x3000:
+	    // Skip next instruction if VX == NN
+	    vx := (instruction & 0x0F00) >> 8
+	    nn := instruction & 0x00FF
+	    if e.registers[vx] == uint8(nn) {
+		e.pc += 2
+	    }
+	    break
+	case 0x4000:
+	    // Skip next instruction if VX != NN
+	    vx := (instruction & 0x0F00) >> 8
+	    nn := instruction & 0x00FF
+	    if e.registers[vx] != uint8(nn) {
+		e.pc += 2
+	    }
+	    break
+	case 0x5000:
+	    // Skip next instruction if VX == VY
+	    vx := (instruction & 0x0F00) >> 8
+	    vy := (instruction & 0x00F0) >> 4
+	    if e.registers[vx] == e.registers[vy] {
+		e.pc += 2
+	    }
+	    break
 	case 0x6000:
 	    // Set VX to NN
-	    x := (instruction & 0x0F00) >> 8
+	    vx := (instruction & 0x0F00) >> 8
 	    nn := instruction & 0x00FF
-	    e.registers[x] = uint8(nn)
+	    e.registers[vx] = uint8(nn)
 	    break
 	case 0x7000:
 	    // Add NN to VX
-	    x := (instruction & 0x0F00) >> 8
+	    vx := (instruction & 0x0F00) >> 8
 	    nn := instruction & 0x00FF
-	    e.registers[x] += uint8(nn)
+	    e.registers[vx] += uint8(nn)
+	    break
+	case 0x8000:
+	    vx := (instruction & 0x0F00) >> 8
+	    vy := (instruction & 0x00F0) >> 4
+	    switch instruction & 0x000F {
+		case 0x0: 	// Set
+		    e.registers[vx] = e.registers[vy]
+		    break
+		case 0x1: 	// OR
+		    e.registers[vx] |= e.registers[vy]
+		    break
+		case 0x2:	// AND
+		    e.registers[vx] &= e.registers[vy]
+		    break
+		case 0x3: 	// XOR
+		    e.registers[vx] ^= e.registers[vy]
+		case 0x4: 	// ADD
+		    sum := uint16(e.registers[vx]) + uint16(e.registers[vy])
+		    e.registers[0xF] = 0	// Reset carry
+		    if sum >= 0xFF {
+			e.registers[0xF] = 1	// Carry for register overflow
+		    } 
+		    e.registers[vx] += e.registers[vy] 
+		    break
+		case 0x5: 	// SUB VX = VX - VY
+		    e.registers[0xF] = 0
+		    if e.registers[vx] >= e.registers[vy] { 
+			e.registers[0xF] = 1
+		    } 
+		    e.registers[vx] -= e.registers[vy]
+		    break;
+		case 0x7: 	// SUBN VX = VY - VX
+		    e.registers[0xF] = 0
+		    if e.registers[vy] >= e.registers[vx] {
+			e.registers[0xF] = 1
+		    } 
+		    e.registers[vx] = e.registers[vy] - e.registers[vx]
+		    break
+		case 0x6: 	// SHIFTR VX = VX >> 1
+		    e.registers[0xF] = e.registers[vx] & 0x1
+		    e.registers[vx] >>= 1
+		    break
+		case 0xE: 	// SHIFTL VX = VX << 1
+		    e.registers[0xF] = (e.registers[vx] >> 7) & 0x1
+		    e.registers[vx] <<= 1
+		    break
+		}
+	    break
+	case 0x9000:
+	    // Skip next instruction if VX != VY
+	    vx := (instruction & 0x0F00) >> 8
+	    vy := (instruction & 0x00F0) >> 4
+	    if e.registers[vx] != e.registers[vy] {
+		e.pc += 2
+	    }
 	    break
 	case 0xA000:
 	    // Set I to NNN
 	    e.i = instruction & 0x0FFF 
+	    break
+	case 0xB000:
+	    // Jump to NNN + V0 // Fix if CHIP-48 &| SUPERCHIP (Same with ALU)
+	    e.pc = (instruction & 0x0FFF) + uint16(e.registers[0])
+	    break
+	case 0xC000:
+	    // Set VX to random number & NN
+	    vx := (instruction & 0x0F00) >> 8
+	    nn := instruction & 0x00FF
+	    e.registers[vx] = random_uint8() & uint8(nn)
 	    break
 	case 0xD000:
 	    // Draw sprite at VX, VY with height N 
@@ -211,5 +313,78 @@ func (e *Emulator) execute() {
     	    }
 	    draw <- true
     	    break
+	case 0xE000:
+	    // Skip if key pressed
+	    vx := (instruction & 0x0F00) >> 8
+	    switch instruction & 0x00FF {
+		case 0x9E:
+		    if e.peripherals[e.registers[vx]] == 1 {
+			e.pc += 2
+		    }
+		    break
+		case 0xA1:
+		    if e.peripherals[e.registers[vx]] == 0 {
+			e.pc += 2
+		    }
+		    break
+	    }
+	    break
+	case 0xF000:
+	    vx := (instruction & 0x0F00) >> 8
+	    switch instruction & 0x00FF {
+		// Timers
+		case 0x07:
+		    e.registers[vx] = e.delay_timer
+		    break
+		case 0x15:
+		    e.delay_timer = e.registers[vx]
+		    break
+		case 0x18:
+		    e.sound_timer = e.registers[vx]
+		    break
+		case 0x1E:	// Add to I
+		    e.i += uint16(e.registers[vx])
+		    // Set VF to 1 if overflow
+		    if e.i > 0xFFF {
+			e.registers[0xF] = 1
+		    } else {
+			e.registers[0xF] = 0
+		    }
+		    break
+		case 0x0A:	// Get Key
+		    // Wait for X key press
+		    for i := uint8(0); i < 16; i++ {
+			if e.peripherals[i] == 1 {
+			    e.registers[vx] = i
+			    break
+			}
+			if i == 15 {
+			    i = 0
+			}
+		    }
+		    break
+		case 0x29:	// Set I to location of sprite for digit VX
+		    e.i = FONTSET_ADDR + uint16(e.registers[vx]) * 5
+		    break
+		case 0x33:
+		    vx := (instruction & 0x0F00) >> 8
+		    e.memory[e.i] = e.registers[vx] / 100
+		    e.memory[e.i + 1] = (e.registers[vx] / 10) % 10
+		    e.memory[e.i + 2] = (e.registers[vx] % 100) % 10
+		    break
+		case 0x55:
+		    // Store registers V0 through VX in memory starting at location I
+		    for i := uint16(0); i <= vx; i++ {
+			e.memory[e.i + i] = e.registers[i]
+		    }
+		    break
+		case 0x65:
+		    // Read registers V0 through VX from memory starting at location 
+		    for i := uint16(0); i <= vx; i++ {
+			e.registers[i] = e.memory[e.i + i]
+		    }
+		    break
+	    }
+	    break
     }
 }

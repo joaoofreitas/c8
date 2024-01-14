@@ -41,8 +41,8 @@ func (w *SDL_WINDOW) InitColors() {
     w.surface.FillRect(nil, 0)
 
     w.pixel = sdl.Rect{}
-    w.white_map = 0xFFFFFFFF
-    w.black_map = 0x00000000
+    w.white_map = ACCENT_COLOR
+    w.black_map = BG_COLOR 
     w.pixel.W = VIDEO_SCALE
     w.pixel.H = VIDEO_SCALE
 }
@@ -55,7 +55,7 @@ func (w *SDL_WINDOW) Draw(vm *Emulator) {
         if vm.display[i] > 0 {
             w.surface.FillRect(&w.pixel, w.white_map)
         } else {
-    	w.surface.FillRect(&w.pixel, w.black_map)
+	   w.surface.FillRect(&w.pixel, w.black_map)
         }
     }
     w.window.UpdateSurface()
