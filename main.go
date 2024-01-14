@@ -9,6 +9,8 @@ import (
     "fmt"
 )
 
+var draw chan bool
+
 type SDL_WINDOW struct {
     // Window
     window *sdl.Window
@@ -80,11 +82,11 @@ func (w *SDL_WINDOW) HandleEvents(vm *Emulator) {
 			    fmt.Println("1")
 			    break
 			case sdl.K_2:
-			   fmt.Println("2")
-		    	   break
+			    fmt.Println("2")
+			    break
 		        case sdl.K_3:
 			   fmt.Println("3")
-		    	   break
+			   break
 		        case sdl.K_q:
 			   fmt.Println("4")
 		    	   break   
@@ -128,6 +130,7 @@ func (w *SDL_WINDOW) HandleEvents(vm *Emulator) {
 		}
 		break
 	}
+	break;
     }
 }
 
@@ -137,16 +140,32 @@ func main() {
     w := SDL_WINDOW{}
     w.InitSDLWindow()
     defer w.window.Destroy()
-    
+
     w.InitColors()
    
     vm := NewEmulator()
     vm.load_rom("roms/ibm.ch8")
+    draw = make(chan bool) 
 
+    // Run the machine at 1MHz 
+    go func() {
+	for vm.running {
+	    vm.execute()	
+    	    time.Sleep(time.Second / time.Duration(vm.frequency))
+	}
+    }()
+   
+    // Making user input async
+    go func() {
+	for vm.running {
+	    w.HandleEvents(vm);
+	}
+	close(draw)
+    }()
+    
+    // Drawing only when having a draw signal
     for vm.running {
-    	vm.execute()
-    	time.Sleep(time.Millisecond / time.Duration(vm.frequency))
+	_ = <- draw
     	w.Draw(vm)
-	w.HandleEvents(vm);
     }
 }

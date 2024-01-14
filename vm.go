@@ -195,6 +195,7 @@ func (e *Emulator) execute() {
     	            }
     	        }
     	    }
+	    draw <- true
     	    break
     }
 }

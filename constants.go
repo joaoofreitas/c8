@@ -7,5 +7,5 @@ const (
 
     DISPLAY_WIDTH = 64
     DISPLAY_HEIGHT = 32
-    VIDEO_SCALE = 10
+    VIDEO_SCALE = 30
 )
