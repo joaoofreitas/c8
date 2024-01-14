@@ -4,11 +4,35 @@ import (
     "fmt"
 )
 
+type Stack struct {
+    stack[16] uint16
+    sp uint16
+}
+
+func NewStack() *Stack {
+	s := new(Stack)
+	s.sp = 0
+	return s
+}
+
+func (s *Stack) push(addr uint16) {
+	s.stack[s.sp] = addr
+	s.sp++
+}
+
+func (s *Stack) pop() uint16 {
+    // To implement
+    return 0
+}
+
 type Emulator struct {
     memory[MEMORY_SIZE] uint8
     registers[16] uint8
     pc uint16
-    display[DISPLAY_WIDTH * DISPLAY_HEIGHT] bool
+    i uint16
+    display[DISPLAY_WIDTH * DISPLAY_HEIGHT] uint8
+
+    frequency uint64
 }
 
 // Constructor for Emulator, fontset loading, initialization of PC, etc...
@@ -41,6 +65,7 @@ func NewEmulator() *Emulator {
     }
 
     e.pc = START_ADDRESS
+    e.frequency = 1000000 // 1MHz
     return e
 }
 
@@ -84,17 +109,99 @@ func (e *Emulator) print_memory() {
     }
 }
 
-func (e *Emulator) fetch() {
-     
-
+func (e *Emulator) print_display() {
+    fmt.Println("Display")
+    for y := 0; y < DISPLAY_HEIGHT; y++ {
+	fmt.Println() 
+	for x := 0; x < DISPLAY_WIDTH; x++ {
+	    if e.display[x + (y * DISPLAY_WIDTH)] == 1 {
+		fmt.Printf("X")
+	    } else {
+		fmt.Printf(" ")
+	    }
+	}
+    }
 }
 
-func (e *Emulator) decode() {
 
-}
+
+//    X: The second nibble. Used to look up one of the 16 registers (VX) from V0 through VF.
+//    Y: The third nibble. Also used to look up one of the 16 registers (VY) from V0 through VF.
+//    N: The fourth nibble. A 4-bit number.
+//    NN: The second byte (third and fourth nibbles). An 8-bit immediate number.
+//    NNN: The second, third and fourth nibbles. A 12-bit immediate memory address.
 
 func (e *Emulator) execute() {
+    // Fetch
+    var i_byte_1 , i_byte_2 uint16
+    i_byte_1 = uint16(e.memory[e.pc])
+    i_byte_2 = uint16(e.memory[e.pc+1])
 
+    e.pc += 2
+
+    var instruction uint16 = (i_byte_1 << 8) | (i_byte_2)
+
+    // Decode
+    var opcode uint16 = instruction & 0xF000
+
+    // execute
+
+    switch opcode {
+	case 0x0000:
+	    switch instruction {
+		case 0x00E0:
+		    // Clear the screen
+		    for i := 0; i < DISPLAY_WIDTH * DISPLAY_HEIGHT; i++ {
+			e.display[i] = 0 
+		    }
+		    break
+	    }
+	    break
+	case 0x1000:
+	    // Jump to address NNN
+	    e.pc = instruction & 0x0FFF
+	    break
+	case 0x6000:
+	    // Set VX to NN
+	    x := (instruction & 0x0F00) >> 8
+	    nn := instruction & 0x00FF
+	    e.registers[x] = uint8(nn)
+	    break
+	case 0x7000:
+	    // Add NN to VX
+	    x := (instruction & 0x0F00) >> 8
+	    nn := instruction & 0x00FF
+	    e.registers[x] += uint8(nn)
+	    break
+	case 0xA000:
+	    // Set I to NNN
+	    e.i = instruction & 0x0FFF 
+	    break
+	case 0xD000:
+	    // Draw sprite at VX, VY with height N 
+	    vx := uint16(e.registers[(instruction & 0x0F00)>>8])
+	    vy := uint16(e.registers[(instruction & 0x00F0)>>4])
+
+	    n := instruction & 0x000F
+	    e.registers[0xF] = 0 
+	    
+	    for yline := uint16(0); yline < n; yline++ {
+    	        spriteRow := e.memory[e.i + yline]
+    	        for xline := uint16(0); xline < 8; xline++ {
+    	            if (spriteRow & (0x80 >> xline)) != 0 {
+    	                if vx+xline >= DISPLAY_WIDTH || vy+yline >= DISPLAY_HEIGHT {
+    	                    continue 
+    	                }
+    	                addr := (vx + xline) + ((vy + yline) * DISPLAY_WIDTH)
+    	                if e.display[addr] == 1 {
+    	                    e.registers[0xF] = 1
+    	                }
+    	                e.display[addr] ^= 1
+    	            }
+    	        }
+    	    }
+    	    break
+    }
 }
 
 // Run the vm 
