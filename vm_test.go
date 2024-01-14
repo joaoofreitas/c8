@@ -31,8 +31,23 @@ func TestFontset(t *testing.T) {
 }
 
 func TestPC (t *testing.T) {
+    e := NewEmulator()
+    if e.pc != START_ADDRESS {
+        t.Error("Expected pc to be set to START_ADDRESS")
+    }
+}
+
+func TestMemoryPrint(t *testing.T) {
 	e := NewEmulator()
-	if e.pc != START_ADDRESS {
-	    t.Error("Expected pc to be set to START_ADDRESS")
-	}
+	e.load_rom("roms/test.ch8")
+	e.print_memory()
+}
+
+func TestLoadROM(t *testing.T) {
+    e := NewEmulator()
+    e.load_rom("roms/test.ch8")
+
+    if e.memory[START_ADDRESS] != 0 {
+	t.Error("Expected ROM to be loaded into memory")
+    }
 }

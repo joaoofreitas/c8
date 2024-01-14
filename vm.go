@@ -46,7 +46,42 @@ func NewEmulator() *Emulator {
 
 // Load ROM into memory
 func (e *Emulator) load_rom(rom string) {
-    fmt.Println("Loading ROM...")
+    data, err := ReadRom(rom)
+    if err != nil {
+	panic(err)
+    }
+    
+    for i := 0; i < len(data); i++ {
+	e.memory[START_ADDRESS + i] = data[i]
+    }
+}
+
+// Prints memory in a pretty table of addresses last address digit will be on collumns and rest as lines
+func (e *Emulator) print_memory() {
+    fmt.Println("Memory Dump:")
+    fmt.Printf("Addr |  00  |  01  |  02  |  03  |  04  |  05  |  06  |  07  |  08  |  09  |  0A  |  0B  |  0C  |  0D  |  0E  |  0F  |\n")
+    fmt.Printf("======================================================================================================================\n")
+
+    for i := 0; i < MEMORY_SIZE; i += 16 {
+        empty := true 	// Check if the entire row is 0000 and skip it if true
+        for j := 0; j < 16; j++ {
+    	if e.memory[i+j] != 0 {
+    	    empty = false
+                break
+            }
+        }
+        if empty {
+            continue
+        }
+    
+        // Print the memory address
+        fmt.Printf("%04X | ", i)
+        // Print each memory cell
+        for j := 0; j < 16; j++ {
+            fmt.Printf("%04X | ", e.memory[i+j])
+        }
+    	fmt.Println()
+    }
 }
 
 // Run the vm 
