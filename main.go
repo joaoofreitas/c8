@@ -15,7 +15,7 @@ func main() {
     defer sdl.Quit()
     
     vm := NewEmulator()
-    vm.load_rom("roms/ibm.ch8")
+    vm.load_rom("roms/test.ch8")
     vm.print_memory()
 
 
@@ -35,7 +35,7 @@ func main() {
    running := true
     for running {
 	vm.execute()
-	time.Sleep(time.Second / time.Duration(vm.frequency))
+	time.Sleep(time.Millisecond / time.Duration(vm.frequency))
 	// Draw white pixel for display 1 and black for 0
     	for i := 0; i < DISPLAY_WIDTH * DISPLAY_HEIGHT; i++ {
     	    pixel := sdl.Rect{}

@@ -4,33 +4,17 @@ import (
     "fmt"
 )
 
-type Stack struct {
-    stack[16] uint16
-    sp uint16
-}
-
-func NewStack() *Stack {
-	s := new(Stack)
-	s.sp = 0
-	return s
-}
-
-func (s *Stack) push(addr uint16) {
-	s.stack[s.sp] = addr
-	s.sp++
-}
-
-func (s *Stack) pop() uint16 {
-    // To implement
-    return 0
-}
-
 type Emulator struct {
     memory[MEMORY_SIZE] uint8
     registers[16] uint8
     pc uint16
     i uint16
+    sp uint8
+
     display[DISPLAY_WIDTH * DISPLAY_HEIGHT] uint8
+    peripherals[16] uint8
+    stack[16] uint16
+
 
     frequency uint64
 }
@@ -123,6 +107,15 @@ func (e *Emulator) print_display() {
     }
 }
 
+func (e *Emulator) push(addr uint16) {
+    e.stack[e.sp] = addr
+    e.sp++
+}
+
+func (e *Emulator) pop() {
+    e.stack[e.sp] = 0
+    e.sp--
+}
 
 
 //    X: The second nibble. Used to look up one of the 16 registers (VX) from V0 through VF.
