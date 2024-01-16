@@ -28,6 +28,7 @@ func main() {
    
     vm := NewEmulator()
     vm.load_rom(rom_location)
+
     draw = make(chan bool) 
 
     // Run the machine at 1MHz 
@@ -37,8 +38,22 @@ func main() {
     	    time.Sleep(time.Second / time.Duration(vm.frequency))
 	}
     }()
-   
-    // Making user input async
+
+
+
+    go func () {
+	for vm.running {
+	    if vm.delay_timer > 0 {
+		vm.delay_timer -= 1
+	    }
+	    if vm.sound_timer > 0 {
+		vm.sound_timer -= 1
+	    }	
+	    time.Sleep(time.Second / 60)
+	}
+    }()
+
+    // Making drawing async
     go func() {
 	for vm.running {
 	    w.HandleEvents(vm);

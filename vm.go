@@ -15,6 +15,7 @@ type Emulator struct {
     sound_timer uint8
 
     display[DISPLAY_WIDTH * DISPLAY_HEIGHT] uint8
+
     peripherals[16] uint8
     stack[16] uint16
 
@@ -119,6 +120,12 @@ func (e *Emulator) print_registers() {
 	}
 }
 
+func (e *Emulator) print_timer() {
+	fmt.Println("Timers")
+	fmt.Printf("Delay: %02X\n", e.delay_timer)
+	fmt.Printf("Sound: %02X\n", e.sound_timer)
+}
+
 func (e *Emulator) print_peripherals() {
 	fmt.Println("Peripherals")
 	for i := 0; i < 16; i++ {
@@ -150,7 +157,7 @@ func (e *Emulator) execute() {
     i_byte_2 = uint16(e.memory[e.pc+1])
 
     e.pc += 2
-
+    e.print_timer()
     var instruction uint16 = (i_byte_1 << 8) | (i_byte_2)
 
     // Decode
@@ -236,33 +243,40 @@ func (e *Emulator) execute() {
 		    e.registers[vx] ^= e.registers[vy]
 		case 0x4: 	// ADD
 		    sum := uint16(e.registers[vx]) + uint16(e.registers[vy])
+		    e.registers[vx] += e.registers[vy] 
 		    e.registers[0xF] = 0	// Reset carry
-		    if sum >= 0xFF {
+		    if sum > 0xFF {
 			e.registers[0xF] = 1	// Carry for register overflow
 		    } 
-		    e.registers[vx] += e.registers[vy] 
 		    break
 		case 0x5: 	// SUB VX = VX - VY
-		    e.registers[0xF] = 0
-		    if e.registers[vx] >= e.registers[vy] { 
-			e.registers[0xF] = 1
-		    } 
-		    e.registers[vx] -= e.registers[vy]
+		    sub := e.registers[vx] - e.registers[vy]
+		    c := 0
+		    if e.registers[vx] < e.registers[vy] { 
+			c = 0
+		    } else {
+			c = 1
+		    }
+		    e.registers[vx] = sub
+		    e.registers[0xF] = uint8(c)
 		    break;
 		case 0x7: 	// SUBN VX = VY - VX
-		    e.registers[0xF] = 0
-		    if e.registers[vy] >= e.registers[vx] {
-			e.registers[0xF] = 1
-		    } 
 		    e.registers[vx] = e.registers[vy] - e.registers[vx]
+		    if e.registers[vy] > e.registers[vx] {
+			e.registers[0xF] = 1
+		    }  else {
+			e.registers[0xF] = 0
+		    }
 		    break
-		case 0x6: 	// SHIFTR VX = VX >> 1
-		    e.registers[0xF] = e.registers[vx] & 0x1
-		    e.registers[vx] >>= 1
+		case 0x6: 	// SHIFTR VX = VX >> 1 (Has quircks)
+		    bit := e.registers[vx] & 0x1
+		    e.registers[vx] = e.registers[vx] >> 1
+		    e.registers[0xF] = bit
 		    break
-		case 0xE: 	// SHIFTL VX = VX << 1
-		    e.registers[0xF] = (e.registers[vx] >> 7) & 0x1
+		case 0xE: 	// SHIFTL VX = VX << 1 (Has quircks)
+		    bit := (e.registers[vx] >> 7) & 0x1
 		    e.registers[vx] <<= 1
+		    e.registers[0xF] = bit
 		    break
 		}
 	    break
@@ -351,16 +365,18 @@ func (e *Emulator) execute() {
 			e.registers[0xF] = 0
 		    }
 		    break
-		case 0x0A:	// Get Key
-		    // Wait for X key press
-		    for i := uint8(0); i < 16; i++ {
-			if e.peripherals[i] == 1 {
-			    e.registers[vx] = i
+		case 0x0A:	// Get Key 
+		    var key_released bool = false
+		    // Wait for X key press to be released
+		    for i, state := range e.peripherals {
+			if (state == 1) {
+			    e.registers[vx] = uint8(i)
+			    key_released = true
 			    break
 			}
-			if i == 15 {
-			    i = 0
-			}
+		    }
+		    if !key_released{
+			e.pc -= 2
 		    }
 		    break
 		case 0x29:	// Set I to location of sprite for digit VX
