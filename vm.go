@@ -16,6 +16,7 @@ type Emulator struct {
 
     display[DISPLAY_WIDTH * DISPLAY_HEIGHT] uint8
 
+    peripheral_release uint8 // Internal flag
     peripherals[16] uint8
     stack[16] uint16
 
@@ -56,6 +57,8 @@ func NewEmulator() *Emulator {
     e.pc = START_ADDRESS
     e.frequency = 1000000 // 1MHz
     e.running = true
+
+    e.peripheral_release = 255
     return e
 }
 
@@ -159,7 +162,7 @@ func (e *Emulator) execute() {
     e.pc += 2
     e.print_timer()
     var instruction uint16 = (i_byte_1 << 8) | (i_byte_2)
-
+    
     // Decode
     var opcode uint16 = instruction & 0xF000
 
@@ -368,16 +371,26 @@ func (e *Emulator) execute() {
 		case 0x0A:	// Get Key 
 		    var key_released bool = false
 		    // Wait for X key press to be released
-		    for i, state := range e.peripherals {
-			if (state == 1) {
-			    e.registers[vx] = uint8(i)
+		    if (e.peripheral_release < 16) {
+			if(e.peripherals[e.peripheral_release] == 0) {
 			    key_released = true
-			    break
 			}
+		    } else {
+			for i, state := range e.peripherals {
+		    	    if state == 1 {
+		    	        e.peripheral_release = uint8(i)
+		    	        break
+		    	    }
+		    	}
 		    }
-		    if !key_released{
+
+		    if !key_released  {
 			e.pc -= 2
+		    } else {
+			e.registers[vx] = e.peripheral_release
+			e.peripheral_release = 255
 		    }
+
 		    break
 		case 0x29:	// Set I to location of sprite for digit VX
 		    e.i = FONTSET_ADDR + uint16(e.registers[vx]) * 5
