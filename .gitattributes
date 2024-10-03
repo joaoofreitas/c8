@@ -1,2 +1,3 @@
 *.ch8 linguist-vendored
+*.roff linguist-vendored
 *.8o
